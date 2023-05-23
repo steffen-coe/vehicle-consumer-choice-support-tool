@@ -18,7 +18,6 @@ diff_cum_df = pd.read_csv("results/"+"cumulative differences/"+diff_cum_df_fn+".
 
 colorcode = st.checkbox("Apply colors according to cost savings/premiums?", value=False)
 if colorcode:
-	import seaborn as sns
 	import matplotlib.pyplot as plt
 	from matplotlib import colors
 	
