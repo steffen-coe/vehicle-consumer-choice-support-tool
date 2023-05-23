@@ -21,9 +21,7 @@ if colorcode:
 	import seaborn as sns
 	import matplotlib.pyplot as plt
 	from matplotlib import colors
-
-
-
+	
 	def background_gradient(s, m, M, cmap='RdYlGn', low=0, high=0):
 		rng = M - m
 		norm = colors.Normalize(m - (rng * low),
@@ -37,6 +35,7 @@ if colorcode:
 	st.dataframe(diff_cum_df.style.apply(	background_gradient,
 											cmap="RdYlGn_r",
 											m=-even_range,
-											M=even_range).set_precision(0))
+											M=even_range).format(precision=0))
 else:
-	st.dataframe(diff_cum_df.style.set_precision(0))
+	# st.dataframe(diff_cum_df.style.set_precision(0))
+	st.dataframe(diff_cum_df.style.format(precision=0))
