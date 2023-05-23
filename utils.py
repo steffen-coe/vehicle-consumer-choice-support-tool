@@ -21,12 +21,8 @@ Useful tools for Grundpraktikum Physik, based on MAPLE sheet Praktikum.mws
 import os
 import numpy as np
 import pandas as pd
-import scipy
-import scipy.fftpack
-import scipy.odr
 import matplotlib
 import matplotlib.pyplot as plt
-from re import sub
 
 f_size = matplotlib.rcParams['font.size'] #used as fontsize
 t_size = matplotlib.rcParams['font.size'] #used as ticksize
@@ -40,12 +36,6 @@ yr_scilim = r_scilim
 
 pad_inches = 0.05
 
-
-def snake_case(s):
-	return '_'.join(
-		sub('([A-Z][a-z]+)', r' \1',
-		sub('([A-Z]+)', r' \1',
-		s.replace('-', ' '))).split()).lower()
 
 def basic_stats(series):
 	"""
