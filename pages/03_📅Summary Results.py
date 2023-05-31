@@ -1,7 +1,9 @@
 import streamlit as st
 import pandas as pd
 
-from Start import df_vehicles,df_areas
+from config.config import *
+
+from Start import df_vehicles,df_areas,df_income_groups
 
 st.title("Summary tables of results")
 
@@ -9,11 +11,17 @@ st.markdown("Shown are the **differences in costs and emissions** between an EV 
 + 🟥 **<font color=#800000>**Red**</font>** values indicate **higher** costs/emissions for the EV. \n \
 + 🟩 **<font color=#00805e>**Green**</font>** values represent cost/emission **savings** for the EV.", unsafe_allow_html=True)
 
-area = st.selectbox("Area (affects gas and electricity prices):", df_areas.index, index=1, key="needs unique key because same selectbox (area) as above")
-year = st.selectbox("Year (affects gas and electricity pricess):", [2020,2021,2022], index=2, key="needs unique key because same selectbox (year) as above")
+#settings
+col0_area,col0_year,col0_inc_group = st.columns(3)
+with col0_area:
+	area = st.selectbox("Area (affects gas and electricity prices):", df_areas.index, index=1)
+with col0_year:
+	year = st.selectbox("Year (affects gas and electricity prices):", [2020,2021,2022], index=2)
+with col0_inc_group:
+	income_group = st.selectbox("Income group of vehicle buyer:", df_income_groups.index, index=1)
 
 #read-in cumulative results data
-diff_cum_df_fn = "diff_cum_all_area={0:s}_year={1:d}".format(area,year)
+diff_cum_df_fn = "diff_cum_all_area={0:s}_year={1:d}_income_group={2:s}".format(area,year,income_group)
 diff_cum_df = pd.read_csv("results/"+"cumulative differences/"+diff_cum_df_fn+".csv", index_col="quantity")
 
 colorcode = st.checkbox("Apply colors according to cost savings/premiums?", value=False)

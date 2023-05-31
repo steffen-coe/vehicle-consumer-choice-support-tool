@@ -9,19 +9,32 @@ import utils as u
 from config.config import *
 
 class LCA:
-	def __init__(self, df, areas, veh_names, area, year):
-		self.df = df
-		self.areas = areas
+	def __init__(self, df_vehicles, df_areas, df_income_groups, veh_names, area, year, income_group):
+		self.df_vehicles = df_vehicles
+		self.df_areas = df_areas
+		self.df_income_groups = df_income_groups
 		self.veh_names = veh_names
 		self.area = area
 		self.year = year
+		self.income_group = income_group
 		
-		self.veh_name = self.veh_names[0] #use first vehicle in selection to set annual and lifetime mileage
-		self.annual_mileage = int(self.df.loc[self.veh_name, "annual_mileage [mi]"])
-		self.lifetime_mileage = int(self.df.loc[self.veh_name, "lifetime_mileage [mi]"])
-		self.lifetime = self.lifetime_mileage/self.annual_mileage #in years
+		#old way: get annual mileage and lifetime mileage from first selected vehicle (and determine lifetime from that)
+		# veh_name0 = self.veh_names[0] #use first vehicle in selection to set annual and lifetime mileage
+		# self.annual_mileage = int(self.df_vehicles.loc[veh_name0, "annual_mileage [mi]"])
+		# self.lifetime_mileage = int(self.df_vehicles.loc[veh_name0, "lifetime_mileage [mi]"])
+		# self.lifetime = self.lifetime_mileage / self.annual_mileage #in years
+		
+		#now: get annual mileage and lifetime from income group (and determine lifetime mileage from that)
+		annual_mileage_col = "average annual mileage per vehicle (U.S.) [mi]" #could in theory depend on area AND income group
+		self.annual_mileage = self.df_income_groups.loc[self.income_group, annual_mileage_col]
+		self.lifetime = self.df_income_groups.loc[self.income_group, "average vehicle age [years]"]
+		self.lifetime_mileage = self.annual_mileage * self. lifetime
+		
 		self.lifetime = round(self.lifetime, 2)
-		self.lifetime_range = list(range(int(np.floor(self.lifetime))+1)) + [self.lifetime]
+		self.lifetime_range = list(range(int(np.floor(self.lifetime))+1))
+		if int(self.lifetime) != self.lifetime: #if lifetime is an even number, we do not need to add another element to self.lifetime_range
+			self.lifetime_range += [self.lifetime]
+		# print(self.annual_mileage,self.lifetime,self.lifetime_mileage)
 		
 		# filename = "{0:s}_{1:s}_area={2:s}_{3:d}_cps={4:s}.png".format(str(df.loc[veh_name, "regulatory_class"]), category, area, year)
 		
@@ -35,12 +48,14 @@ class LCA:
 							"insurance costs [$]", "total insurance costs [$]", 
 							"maintenance costs [$]", "total maintenance costs [$]", 
 							"costs [$]", "total costs [$]", 
+							"future costs [$]", "total future costs [$]", #everything but purchase costs
 							"present value purchase costs [$]", "total present value purchase costs [$]", 
 							"present value incentives costs [$]", "total present value incentives costs [$]", 
 							"present value operations costs [$]", "total present value operations costs [$]", 
 							"present value insurance costs [$]", "total present value insurance costs [$]", 
 							"present value maintenance costs [$]", "total present value maintenance costs [$]", 
 							"present value costs [$]", "total present value costs [$]", 
+							"present value future costs [$]", "total present value future costs [$]", 
 							"emissions [tCO$_2$-eq.]", "total emissions [tCO$_2$-eq.]"
 			]
 		
@@ -70,13 +85,17 @@ class LCA:
 		
 		#fill in mileage column
 		df_results.loc[0, "mileage [mi]"] = 0
+		# print(df_results)
+		# print(self.lifetime_range)
+		# print(df_results["time [yr]"].diff())
+		# print(self.annual_mileage)
 		df_results.loc[self.lifetime_range[1:], "mileage [mi]"] = df_results["time [yr]"].diff() * self.annual_mileage
 		
 		self.results = dict()
 		self.results_fns = dict()
 		for veh_name in self.veh_names:
 			self.results[veh_name] = df_results.copy()
-			self.results_fns[veh_name] = "veh_name={0:s}_area={1:s}_year={2:d}.csv".format(veh_name.replace("/","-"), area, year) #results filenames
+			self.results_fns[veh_name] = "veh_name={0:s}_area={1:s}_year={2:d}_income_group={3:s}.csv".format(veh_name.replace("/","-"), self.area, self.year, self.income_group) #results filenames
 	
 	def retrieve_results(self):
 		for veh_name in self.veh_names:
@@ -92,63 +111,69 @@ class LCA:
 		return years*self.annual_mileage
 	
 	def get_fuel_cost_per_mile(self, veh_name):
-		if self.df.loc[veh_name, "powertrain_type"] == "ICEV":
-			fuel_cost_per_mile = self.areas.loc[self.area, "gas_price %d [$/gal]"%self.year] / self.df.loc[veh_name, "real-world mpg [mi/gal]"]
-		elif self.df.loc[veh_name, "powertrain_type"] == "EV":
-			fuel_cost_per_mile = (0.01*((1-p_DCFC)*self.areas.loc[self.area, "electricity_price %d [ct/kWh]"%(self.year-1)] + p_DCFC*self.areas.loc["DCFC", "electricity_price %d [ct/kWh]"%(self.year-1)]) * self.df.loc[veh_name, "energy use [kWh/mi]"])
+		if self.df_vehicles.loc[veh_name, "powertrain_type"] == "ICEV":
+			fuel_cost_per_mile = self.df_areas.loc[self.area, "gas_price %d [$/gal]"%self.year] / self.df_vehicles.loc[veh_name, "real-world mpg [mi/gal]"]
+		elif self.df_vehicles.loc[veh_name, "powertrain_type"] == "EV":
+			fuel_cost_per_mile = (0.01*((1-p_DCFC)*self.df_areas.loc[self.area, "electricity_price %d [ct/kWh]"%(self.year-1)] + p_DCFC*self.df_areas.loc["DCFC", "electricity_price %d [ct/kWh]"%(self.year-1)]) * self.df_vehicles.loc[veh_name, "energy use [kWh/mi]"])
 		return fuel_cost_per_mile
 	
 	def get_monthly_insurance_cost(self, veh_name):
 		#area and model dependency to be added later
-		if self.df.loc[veh_name, "powertrain_type"] == "ICEV":
+		if self.df_vehicles.loc[veh_name, "powertrain_type"] == "ICEV":
 			monthly_insurance_cost = 149
-		elif self.df.loc[veh_name, "powertrain_type"] == "EV":
+		elif self.df_vehicles.loc[veh_name, "powertrain_type"] == "EV":
 			monthly_insurance_cost = 157
 		return monthly_insurance_cost
 	
 	def get_maintenance_cost_per_mile(self, veh_name):
 		#area and model dependency to be added later
-		if self.df.loc[veh_name, "powertrain_type"] == "ICEV":
+		if self.df_vehicles.loc[veh_name, "powertrain_type"] == "ICEV":
 			maintenance_cost_per_mile = 0.101
-		elif self.df.loc[veh_name, "powertrain_type"] == "EV":
+		elif self.df_vehicles.loc[veh_name, "powertrain_type"] == "EV":
 			maintenance_cost_per_mile = 0.061
 		return maintenance_cost_per_mile
 	
 	def get_emissions_per_mile(self, veh_name):
-		if self.df.loc[veh_name, "powertrain_type"] == "ICEV":
-			emissions_per_mile = self.df.loc[veh_name, "real-world CO2 emissions [g/mi]"]
-		elif self.df.loc[veh_name, "powertrain_type"] == "EV":
-			emissions_per_mile = self.df.loc[veh_name, "energy use [kWh/mi]"] * self.areas.loc[self.area, "electricity_emission_intensity 2021 [g/kWh]"] / eff_charging
+		if self.df_vehicles.loc[veh_name, "powertrain_type"] == "ICEV":
+			emissions_per_mile = self.df_vehicles.loc[veh_name, "real-world CO2 emissions [g/mi]"]
+		elif self.df_vehicles.loc[veh_name, "powertrain_type"] == "EV":
+			emissions_per_mile = self.df_vehicles.loc[veh_name, "energy use [kWh/mi]"] * self.df_areas.loc[self.area, "electricity_emission_intensity 2021 [g/kWh]"] / eff_charging
 		return emissions_per_mile*1e-6 #g to t conversion
 	
 	def run(self, veh_name):
 		results_df = self.results[veh_name].copy()
 		
 		#purchase cost
-		results_df.loc[0, "purchase costs [$]"] = self.df.loc[veh_name, "average transaction price [$]"]
-		if self.df.loc[veh_name, "powertrain_type"] == "EV":
-			results_df.loc[1, "incentives costs [$]"] = -7500 #federal EV tax credit
+		results_df.loc[0, "purchase costs [$]"] = self.df_vehicles.loc[veh_name, "average transaction price [$]"]
+		if self.df_vehicles.loc[veh_name, "powertrain_type"] == "EV": #apply federal EV tax credit
+			# results_df.loc[1, "incentives costs [$]"] = -7500
+			results_df.loc[1, "incentives costs [$]"] = - self.df_income_groups.loc[self.income_group, "maximum benefit from federal $7,500 EV tax credit"]
 		
 		#calculate O&M costs
 		results_df["operations costs [$]"] = results_df["time [yr]"].diff() * self.annual_mileage * self.get_fuel_cost_per_mile(veh_name)
 		results_df["insurance costs [$]"] = results_df["time [yr]"].diff() * self.get_monthly_insurance_cost(veh_name)*12
 		results_df["maintenance costs [$]"] = results_df["time [yr]"].diff() * self.annual_mileage * self.get_maintenance_cost_per_mile(veh_name)
 		
-		#sum up O&M costs
+		#sum up costs
 		results_df["costs [$]"] = results_df[[	"purchase costs [$]", 
 												"incentives costs [$]",
 												"operations costs [$]",
 												"insurance costs [$]", 
 												"maintenance costs [$]"]].sum(axis=1)
+		results_df["future costs [$]"] = results_df[[	"incentives costs [$]",
+														"operations costs [$]",
+														"insurance costs [$]", 
+														"maintenance costs [$]"]].sum(axis=1)
 		
-		#discounted costs
+		#discount costs
 		for col in self.non_total_undiscounted_cost_columns:
-			results_df["present value "+col] = results_df[col] / (1+R)**results_df["time [yr]"]
+			# results_df["present value "+col] = results_df[col] / (1+R)**results_df["time [yr]"]
+			results_df["present value "+col] = results_df[col] / (1+self.df_income_groups.loc[self.income_group, "discount rate"])**results_df["time [yr]"]
 		
 		#calculate emissions
 		results_df["emissions [tCO$_2$-eq.]"] = results_df["time [yr]"].diff() * self.annual_mileage * self.get_emissions_per_mile(veh_name)
 		results_df.loc["pre-purchase", "emissions [tCO$_2$-eq.]"] = 0
-		results_df.loc[0, "emissions [tCO$_2$-eq.]"] = self.df.loc[veh_name, "production CO2 footprint [g]"] * 1e-6
+		results_df.loc[0, "emissions [tCO$_2$-eq.]"] = self.df_vehicles.loc[veh_name, "production CO2 footprint [g]"] * 1e-6
 		
 		#cumulative costs/emissions
 		for col in self.non_total_columns:
@@ -174,24 +199,25 @@ class LCA:
 		for veh_name in self.veh_names:
 			x = self.results[veh_name]["time (for plotting) [yr]"]
 			y = self.results[veh_name][y_quant]
-			u.plot(x, y, frame=[fig,ax], kind="plot", label=self.df.loc[veh_name, "label"], color=self.df.loc[veh_name, "color"], lw=self.df.loc[veh_name, "lw"], marker_option=self.df.loc[veh_name, "marker_option"], zorder=self.df.loc[veh_name, "zorder"], ls="-", alpha=1.)
+			u.plot(x, y, frame=[fig,ax], kind="plot", label=self.df_vehicles.loc[veh_name, "label"], color=self.df_vehicles.loc[veh_name, "color"], lw=self.df_vehicles.loc[veh_name, "lw"], marker_option=self.df_vehicles.loc[veh_name, "marker_option"], zorder=self.df_vehicles.loc[veh_name, "zorder"], ls="-", alpha=1.)
 		
 		#figure setup
 		textstr = "%s, %d"%(self.area, self.year)
 		if "costs" in y_quant:
+			textstr += "\ngas = {0:.2f} $/gal\nelectricity = {1:.1f} ct/kWh".format(self.df_areas.loc[self.area, "gas_price %d [$/gal]"%self.year], self.df_areas.loc[self.area, "electricity_price %d [ct/kWh]"%(self.year-1)])
+		if y_quant in ["costs [$]", "total costs [$]", "present value costs [$]", "total present value costs [$]"]:
 			ylabel = "Lifecycle costs [$]"
 			ylim   = (0, max(85000, 1.05*ax.get_ylim()[1]))
-			ylim   = (0.8*min([self.df.loc[veh_name, "average transaction price [$]"] for veh_name in self.veh_names]), max(85000, 1.05*ax.get_ylim()[1]))
+			ylim   = (0.8*min([self.df_vehicles.loc[veh_name, "average transaction price [$]"] for veh_name in self.veh_names]), max(85000, 1.05*ax.get_ylim()[1]))
 			# ylim   = (40000,75000)
-			textstr += "\ngas = {0:.2f} $/gal\nelectricity = {1:.1f} ct/kWh".format(self.areas.loc[self.area, "gas_price %d [$/gal]"%self.year], self.areas.loc[self.area, "electricity_price %d [ct/kWh]"%(self.year-1)])
 		elif "emissions" in y_quant:
 			ylabel = "Lifecycle emissions [tCO$_2$-eq.]"
 			ylim   = (0, max(51, 1.02*ax.get_ylim()[1]))
 			# ylim   = (0,54)
-			textstr += "\nelectricity emission intensity = {0:.0f} g/kWh".format(self.areas.loc[self.area, "electricity_emission_intensity 2021 [g/kWh]"])
+			textstr += "\nelectricity emission intensity = {0:.0f} g/kWh".format(self.df_areas.loc[self.area, "electricity_emission_intensity 2021 [g/kWh]"])
 		else:
 			ylabel = y_quant
-			ylim = ax.get_ylim()
+			ylim = None #ax.get_ylim()
 		
 		ylabel = y_quant
 
@@ -245,7 +271,7 @@ class LCA:
 				xticks[i].set_visible(False)
 		
 		filename = "plot.png"
-		# u.save_figure(fig, "plots/"+filename, dpi=500)
+		# u.save_figure(fig, "plots/"+filename, dpi=200)
 	
 	def get_results(self, veh_name, show_non_total_columns=True, show_time_columns=False):
 		excl_cols = pd.Series(False, index=self.results[veh_name].columns) if show_time_columns else self.results[veh_name].columns.isin(["time [yr]", "time (for plotting) [yr]"]) #hack

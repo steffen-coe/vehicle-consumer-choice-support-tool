@@ -41,7 +41,14 @@ years = [
 			2022, 
 	]
 
-# income_group = ...
+income_groups = [
+		"less than $25k", 
+		"$25-50k", 
+		"$50-75k", 
+		"$75-100k", 
+		"$100-200k", 
+		"more than $200k"
+	]
 
 #for waterfall plots
 plot_types_dict = {
@@ -51,6 +58,7 @@ plot_types_dict = {
 	}
 cost_types = ["purchase", "incentives", "operations", "insurance", "maintenance"]
 ticktext = ["purchase 🚘", "incentives 💸", "operations ⛽", "insurance 📋", "maintenance 🛠", "total ⚖️"] #💨🛣⛽🔌
+cost_types_future = [cost_type for cost_type in cost_types if cost_type!="purchase"]
 fsize = 16
 ffactor = 1.4
 

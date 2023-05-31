@@ -11,7 +11,7 @@ from config.config import *
 import config.init
 config.init.run()
 
-from Start import df_vehicles,df_areas
+from Start import df_vehicles,df_areas,df_income_groups
 
 
 st.title("Total costs of ownership of different vehicles")
@@ -20,17 +20,21 @@ st.header("Visualize costs/emissions over vehicle lifetime")
 
 #settings
 veh_names = st.multiselect("Vehicles:", df_vehicles.index, default=["Typical ICEV", "Typical BEV"]) #TODO: add country flags
-area = st.selectbox("Area (affects gas and electricity prices):", df_areas.index, index=1)
-year = st.selectbox("Year (affects gas and electricity prices):", [2020,2021,2022], index=2)
+col0_area,col0_year,col0_inc_group = st.columns(3)
+with col0_area:
+	area = st.selectbox("Area (affects gas and electricity prices):", df_areas.index, index=1)
+with col0_year:
+	year = st.selectbox("Year (affects gas and electricity prices):", [2020,2021,2022], index=2)
+with col0_inc_group:
+	income_group = st.selectbox("Income group of vehicle buyer:", df_income_groups.index, index=1)
 # incentives = st.multiselect("Incentives:": ["$7,500 Federal EV Tax Credit"])
-income_group = st.selectbox("Income group of vehicle buyer:", ["low", "medium", "high"]) #this determines how much of the tax credit the buyer gets (if income is very low, then the buyer might not owe a total of $7,500 in federal taxes and thus not get the full $7,500 tax credit) and what discount rate the buyer uses
 
 #initialize LCA class object and run/read results
-lca = LCA(df_vehicles, df_areas, veh_names, area, year)
+lca = LCA(df_vehicles, df_areas, df_income_groups, veh_names, area, year, income_group)
 lca.retrieve_results()
 
 #select quantity to plot and plot it
-allow_for_selection_of_non_total_columns = st.checkbox("Include annual costs/emissions in list of quantities to plot?", value=False)
+allow_for_selection_of_non_total_columns = st.checkbox("Include annual costs/emissions in list of quantities to plot", value=False)
 if allow_for_selection_of_non_total_columns:
 	y_quant_list = lca.columns[2:]
 	y_quant_list_default_index = 12
@@ -39,42 +43,37 @@ else:
 	y_quant_list_default_index = 6
 y_quant = st.selectbox("Quantity to plot:", y_quant_list, index=y_quant_list_default_index)
 fig = lca.plot_results(y_quant=y_quant)
-st.pyplot(fig)
+col01, col02 = st.columns([1.5,1])
+with col01:
+	st.pyplot(fig)
 
 #optionally show full results in tables
-show_tabular_results = st.checkbox("Show tabular results?", value=False)
+show_tabular_results = st.checkbox("Show tabular results", value=False)
 if show_tabular_results:
-	show_non_total_columns = st.checkbox("Show annual costs/emissions in tabular results?", value=True)
+	show_non_total_columns = st.checkbox("Show annual costs/emissions in tabular results", value=True)
 	
 	for veh_name in veh_names:
 		st.write("**%s:**"%veh_name)
 		st.write(lca.get_results(veh_name, show_non_total_columns=show_non_total_columns))
 
+
+
 #waterfall plot of summary results
-# """
 st.header("Visualize cumulative differences in costs/emissions")
 
-#settings
-veh_types = [
-				"Typical", 
-				"Typical Car", 
-				"Sedan", 
-				"Car SUV", 
-				"Typical Truck", 
-				"Truck SUV", 
-				"Minivan/Van", 
-				"Pickup"
-			]
-veh_names_pairs = [[veh_type+" ICEV", veh_type+" BEV"] for veh_type in veh_types]
-veh_names_pairs += [["Toyota Corolla ICEV", "Chevrolet Bolt BEV"]]
-
 #select what to show the waterfall plot for
-area = st.selectbox("Area (affects gas and electricity prices):", df_areas.index, index=1, key="needs unique key because same selectbox (area) as above")
-year = st.selectbox("Year (affects gas and electricity pricess):", [2020,2021,2022], index=2, key="needs unique key because same selectbox (year) as above")
+col1_area,col1_year,col1_inc_group = st.columns(3)
+with col1_area:
+	area = st.selectbox("Area (affects gas and electricity prices):", df_areas.index, index=1, key="needs unique key because same selectbox (area) as above")
+with col1_year:
+	year = st.selectbox("Year (affects gas and electricity prices):", [2020,2021,2022], index=2, key="needs unique key because same selectbox (year) as above")
+with col1_inc_group:
+	income_group = st.selectbox("Income group of vehicle buyer:", df_income_groups.index, index=1, key="needs unique key because same selectbox (income group) as above")
 
 plot_type_long = st.selectbox("**What would you like to see?**", plot_types_dict.keys(), index=0)
 plot_type = plot_types_dict[plot_type_long] #"one_either", "one_both", or "all_either"
 
+#say what will be shown in the waterfall plot
 col1, col2 = st.columns(2)
 with col1:
 	if "one" in plot_type:
@@ -94,20 +93,21 @@ with col2:
 		show_nominal_or_PV = st.selectbox("Show nominal or discounted costs?", ["Nominal (future value)", "Discounted (present value)"], index=0)
 		show_PV_dict = {"Nominal (future value)": 0, "Discounted (present value)": 1}
 		show_PV = show_PV_dict[show_nominal_or_PV]
-
 st.write(first_string)
 st.markdown(second_string, unsafe_allow_html=True)
 
+#plot the waterfall plot
 if plot_type == "one_either":
-	fig_one_either = h.plot_waterfall_one_either(veh_type, area, year, show_PV, save_figure=False)
-	st.plotly_chart(fig_one_either, sharing="streamlit", use_container_width=True)
+	fig_one_either = h.plot_waterfall_one_either(veh_type, area, year, income_group, show_PV, save_figure=False)
+	fig = fig_one_either
 elif plot_type == "one_both":
-	fig_one_both = h.plot_waterfall_one_both(veh_type, area, year, save_figure=False)
-	st.plotly_chart(fig_one_both, sharing="streamlit", use_container_width=True)
+	fig_one_both = h.plot_waterfall_one_both(veh_type, area, year, income_group, save_figure=False)
+	fig = fig_one_both
 elif plot_type == "all_either":
-	fig_all_either = h.plot_waterfall_all_either(veh_types_to_show, area, year, show_PV, save_figure=False)
-	st.plotly_chart(fig_all_either, sharing="streamlit", use_container_width=True)
+	fig_all_either = h.plot_waterfall_all_either(veh_types_to_show, area, year, income_group, show_PV, save_figure=False)
+	fig = fig_all_either
 
+st.plotly_chart(fig, sharing="streamlit", use_container_width=True, height=0.6)
 
 
 

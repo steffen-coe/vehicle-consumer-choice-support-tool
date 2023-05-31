@@ -4,12 +4,12 @@ import plotly.graph_objects as go
 
 from config.config import *
 
-def plot_waterfall_one_either(veh_type, area, year, show_PV, save_figure=False):
+def plot_waterfall_one_either(veh_type, area, year, income_group, show_PV, save_figure=False):
 	"""
 	Waterfall plot for **one** vehicle type, showing **either** nominal or present value cost differences.
 	"""
 	#read-in cumulative results data
-	diff_cum_df_fn = "diff_cum_all_area={0:s}_year={1:d}".format(area,year)
+	diff_cum_df_fn = "diff_cum_all_area={0:s}_year={1:d}_income_group={2:s}".format(area,year,income_group)
 	diff_cum_df = pd.read_csv("results/"+"cumulative differences/"+diff_cum_df_fn+".csv", index_col="quantity")
 	
 	cols_for_waterfall_plot = ["total "+cost_type+" costs [$]" for cost_type in cost_types]
@@ -90,19 +90,19 @@ def plot_waterfall_one_either(veh_type, area, year, show_PV, save_figure=False):
 	
 	if save_figure:
 		suffix = "discounted" if show_PV else "nominal"
-		fn = "waterfall_veh_type={0:s}_area={1:s}_year={2:d}_{3:s}".format(veh_type.replace("/","-"), area, year, suffix)
+		fn = "waterfall_veh_type={0:s}_area={1:s}_year={2:d}_income_group={3:s}_{4:s}".format(veh_type.replace("/","-"), area, year, income_group, suffix)
 		width = fsize*1150/22
 		fig.write_image("plots/"+"waterfalls/one_either/"+fn+".png", width=width, height=0.65*width, scale=5)
 	
 	return fig
 
 
-def plot_waterfall_one_both(veh_type, area, year, save_figure=False):
+def plot_waterfall_one_both(veh_type, area, year, income_group, save_figure=False):
 	"""
 	Waterfall plot for **one** vehicle type, showing **both** nominal and present value cost differences.
 	"""
 	#read-in cumulative results data
-	diff_cum_df_fn = "diff_cum_all_area={0:s}_year={1:d}".format(area,year)
+	diff_cum_df_fn = "diff_cum_all_area={0:s}_year={1:d}_income_group={2:s}".format(area,year,income_group)
 	diff_cum_df = pd.read_csv("results/"+"cumulative differences/"+diff_cum_df_fn+".csv", index_col="quantity")
 	
 	fig = go.Figure()
@@ -195,19 +195,19 @@ def plot_waterfall_one_both(veh_type, area, year, save_figure=False):
 	fig.update_layout(layout)
 	
 	if save_figure:
-		fn = "waterfalls_veh_type={0:s}_area={1:s}_year={2:d}".format(veh_type.replace("/","-"), area, year)
+		fn = "waterfalls_veh_type={0:s}_area={1:s}_year={2:d}_income_group={3:s}".format(veh_type.replace("/","-"), area, year, income_group)
 		width = fsize*1150/22
 		fig.write_image("plots/"+"waterfalls/one_both/"+fn+".png", width=width, height=0.65*width, scale=5)
 	
 	return fig
 
 
-def plot_waterfall_all_either(veh_types_to_show, area, year, show_PV, save_figure=False):
+def plot_waterfall_all_either(veh_types_to_show, area, year, income_group, show_PV, save_figure=False):
 	"""
 	Waterfall plot for **all** vehicle types, showing **either** nominal or present value cost differences.
 	"""
 	#read-in cumulative results data
-	diff_cum_df_fn = "diff_cum_all_area={0:s}_year={1:d}".format(area,year)
+	diff_cum_df_fn = "diff_cum_all_area={0:s}_year={1:d}_income_group={2:s}".format(area,year,income_group)
 	diff_cum_df = pd.read_csv("results/"+"cumulative differences/"+diff_cum_df_fn+".csv", index_col="quantity")
 	
 	#settings regarding whether or not to plot nominal or present value
@@ -306,7 +306,7 @@ def plot_waterfall_all_either(veh_types_to_show, area, year, show_PV, save_figur
 	if save_figure:
 		#veh_types_to_show intentionally left out of the filename to not blow it up
 		suffix = "discounted" if show_PV else "nominal"
-		fn = "waterfall_area={0:s}_year={1:d}_{2:s}".format(area, year, suffix)
+		fn = "waterfall_area={0:s}_year={1:d}_income_group={2:s}_{3:s}".format(area, year, income_group, suffix)
 		width = fsize*1150/22
 		fig.write_image("plots/"+"waterfalls/all_either/"+fn+".png", width=width, height=0.65*width, scale=5)
 	
