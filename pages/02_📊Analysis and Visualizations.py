@@ -111,8 +111,6 @@ st.plotly_chart(fig, sharing="streamlit", use_container_width=True, height=0.6)
 
 
 
-
-
 def write(data):
 	# df, df_key = data
 	

@@ -29,7 +29,7 @@ areas = [
 			"U.S.", 
 			"WA", 
 			# "TX", 
-			# "CA", 
+			"CA", 
 			# "NY", 
 			# "MN", 
 			"WV", 
@@ -37,7 +37,7 @@ areas = [
 
 years = [
 # 			2020, #doesn't work right now because electricity price 2019 is not available
-			# 2021, 
+			2021, 
 			2022, 
 	]
 
