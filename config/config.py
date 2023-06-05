@@ -1,16 +1,28 @@
 #settings
-veh_types = []
-veh_types += ["Typical"]
-veh_types += ["Typical Car"]
-veh_types += ["Sedan"]
-veh_types += ["Car SUV"]
-veh_types += ["Typical Truck"]
-veh_types += ["Truck SUV"]
-veh_types += ["Minivan/Van"]
-veh_types += ["Pickup"]
-veh_names_pairs = [[veh_type+" ICEV", veh_type+" BEV"] for veh_type in veh_types]
-veh_names_pairs += [["Toyota Corolla ICEV", "Chevrolet Bolt BEV"]]
-veh_names_pairs
+# veh_types = []
+# veh_types += ["Typical"]
+# veh_types += ["Typical Car"]
+# veh_types += ["Sedan"]
+# veh_types += ["Car SUV"]
+# veh_types += ["Typical Truck"]
+# veh_types += ["Truck SUV"]
+# veh_types += ["Minivan/Van"]
+# veh_types += ["Pickup"]
+# veh_names_pairs = [[veh_type+" ICEV", veh_type+" BEV"] for veh_type in veh_types]
+# veh_names_pairs += [["Toyota Corolla ICEV", "Chevrolet Bolt BEV"]]
+# veh_names_pairs
+#this is a dict of vehicle names to compare (one pair of vehicle names (one ICEV, one BEV) for each vehicle type (keys of the dict)
+veh_names_pairs_dict = {
+	"Typical": ["Typical ICEV", "Typical BEV"], 
+	"Typical Car": ["Typical Car ICEV", "Typical Car BEV"], 
+	"Sedan": ["Sedan ICEV", "Sedan BEV"], 
+	"Car SUV": ["Car SUV ICEV", "Car SUV BEV"], 
+	"Typical Truck": ["Typical Truck ICEV", "Typical Truck BEV"], 
+	"Truck SUV": ["Truck SUV ICEV", "Truck SUV BEV"], 
+	"Minivan/Van": ["Minivan/Van ICEV", "Minivan/Van BEV"], 
+	"Pickup": ["Pickup ICEV", "Pickup BEV"], 
+	"affordable sedan": ["Toyota Corolla ICEV", "Chevrolet Bolt BEV"]
+}
 
 veh_types_colors = {
 						"Typical": "#6929c4", 
@@ -74,6 +86,7 @@ p_DCFC = 0.10 #share of fast-charging for BEV
 eff_charging = 0.95 #charging efficiency
 
 R = 0.025 #discount rate
+discount_rate_options = ["Use defaults", *["{0:d}%".format(p) for p in range(0,26)]]
 
 rec_CO2 = 0 #recycling-phase emissions
 rec_price = 0 #recycling-phase price

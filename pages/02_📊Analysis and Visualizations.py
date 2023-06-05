@@ -1,6 +1,7 @@
 import streamlit as st
 st.set_option('deprecation.showPyplotGlobalUse', False)
 import pandas as pd
+import numpy as np
 import plotly.graph_objects as go
 
 import helpers as h
@@ -27,20 +28,25 @@ with col0_year:
 	year = st.selectbox("Year (affects gas and electricity prices):", [2020,2021,2022], index=2)
 with col0_inc_group:
 	income_group = st.selectbox("Income group of vehicle buyer:", df_income_groups.index, index=1)
+custom_discount_rate_selection = st.select_slider("Select what discount rate to use:", discount_rate_options)
+custom_discount_rate = None if "default" in custom_discount_rate_selection else np.float(custom_discount_rate_selection[:-1])/100
 # incentives = st.multiselect("Incentives:": ["$7,500 Federal EV Tax Credit"])
 
 #initialize LCA class object and run/read results
-lca = LCA(df_vehicles, df_areas, df_income_groups, veh_names, area, year, income_group)
+# lca = LCA(df_vehicles, df_areas, df_income_groups, veh_names, area, year, income_group)
+#slider to specify discount rate
+#think about mechanism to store results with custom discoutn rates, probably just in a separate file with a suffix "_custom_discount_rate" without specifying what it is, rather calculate new every time (need to make sure that when custom_discount_rate is not None that results are calculated new and not read from existing file)
+lca = LCA(df_vehicles, df_areas, df_income_groups, veh_names, area, year, income_group, custom_discount_rate)
 lca.retrieve_results()
 
 #select quantity to plot and plot it
 allow_for_selection_of_non_total_columns = st.checkbox("Include annual costs/emissions in list of quantities to plot", value=False)
 if allow_for_selection_of_non_total_columns:
 	y_quant_list = lca.columns[2:]
-	y_quant_list_default_index = 12
 else:
 	y_quant_list = lca.total_columns
-	y_quant_list_default_index = 6
+# y_quant_list_default_index = y_quant_list.index("total costs [$]")
+y_quant_list_default_index = y_quant_list.index("total present value costs [$]")
 y_quant = st.selectbox("Quantity to plot:", y_quant_list, index=y_quant_list_default_index)
 fig = lca.plot_results(y_quant=y_quant)
 col01, col02 = st.columns([1.5,1])
@@ -74,37 +80,46 @@ plot_type_long = st.selectbox("**What would you like to see?**", plot_types_dict
 plot_type = plot_types_dict[plot_type_long] #"one_either", "one_both", or "all_either"
 
 #say what will be shown in the waterfall plot
+show_slider = False
 col1, col2 = st.columns(2)
 with col1:
 	if "one" in plot_type:
-		veh_type = st.selectbox("Choose vehicle type:", veh_types+["affordable sedan"], index=0)
+		# veh_type = st.selectbox("Choose vehicle type:", veh_types+["affordable sedan"], index=0)
+		veh_type = st.selectbox("Choose vehicle type:", veh_names_pairs_dict.keys(), index=0)
 		first_string = "Shown are the **differences in costs** between an EV and an ICEV for the EPA vehicle type *{0:s}*.".format(veh_type)
 		second_string = 	"+ 🟥 <font color=#800000>**Red**</font> values indicate **higher** costs for the EV. \n \
 + 🟩 <font color=#00805e>**Green**</font> values represent cost **savings** for the EV. \n \
 + 🟦 The <font color=#0068c9>**blue**</font> bar shows the **overall** cost savings of the EV over the ICEV."
 	elif "all" in plot_type:
-		veh_types_to_show = st.multiselect("Choose vehicle types:", veh_types+["affordable sedan"], default=["Typical Car", "Typical Truck"])
+		veh_types_to_show = st.multiselect("Choose vehicle types:", veh_names_pairs_dict.keys(), default=["Typical Car", "Typical Truck"])
 		first_string = "Shown are the **differences in costs** between an EV and an ICEV for all EPA vehicle types."
 		second_string = "+ **Positive** values indicate **higher** costs for the EV. \n \
 + **Negative** values represent cost **savings** for the EV. \n \
 + The **last** bar shows the **overall** cost savings of the EV over the ICEV."
 with col2:
 	if "either" in plot_type:
-		show_nominal_or_PV = st.selectbox("Show nominal or discounted costs?", ["Nominal (future value)", "Discounted (present value)"], index=0)
+		show_nominal_or_PV = st.selectbox("Show nominal or discounted costs?", ["Nominal (future value)", "Discounted (present value)"], index=1)
 		show_PV_dict = {"Nominal (future value)": 0, "Discounted (present value)": 1}
 		show_PV = show_PV_dict[show_nominal_or_PV]
+		if show_PV:
+			show_slider = True
+	elif "both" in plot_type:
+		show_slider = True
+if show_slider: #only show slider to customize discount rate when needed (either when only discounted values are shown or when both nominal and discounted values are shown)
+	custom_discount_rate_selection = st.select_slider("Select what discount rate to use:", discount_rate_options, key="needs unique key because same selectbox (discount rate) as above")
+	custom_discount_rate = None if "default" in custom_discount_rate_selection else np.float(custom_discount_rate_selection[:-1])/100
 st.write(first_string)
 st.markdown(second_string, unsafe_allow_html=True)
 
 #plot the waterfall plot
 if plot_type == "one_either":
-	fig_one_either = h.plot_waterfall_one_either(veh_type, area, year, income_group, show_PV, save_figure=False)
+	fig_one_either = h.plot_waterfall_one_either(veh_type, area, year, income_group, custom_discount_rate, show_PV, save_figure=False)
 	fig = fig_one_either
 elif plot_type == "one_both":
-	fig_one_both = h.plot_waterfall_one_both(veh_type, area, year, income_group, save_figure=False)
+	fig_one_both = h.plot_waterfall_one_both(veh_type, area, year, income_group, custom_discount_rate, save_figure=False)
 	fig = fig_one_both
 elif plot_type == "all_either":
-	fig_all_either = h.plot_waterfall_all_either(veh_types_to_show, area, year, income_group, show_PV, save_figure=False)
+	fig_all_either = h.plot_waterfall_all_either(veh_types_to_show, area, year, income_group, custom_discount_rate, show_PV, save_figure=False)
 	fig = fig_all_either
 
 st.plotly_chart(fig, sharing="streamlit", use_container_width=True, height=0.6)

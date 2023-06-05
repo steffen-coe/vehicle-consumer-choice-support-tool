@@ -2,7 +2,9 @@ pages/__pycache__/
 config/__pycache__/
 
 archive/
+data/raw/
 plots/
+results/deprecated/
 
 
 # created by DataSpell

@@ -1,16 +1,64 @@
+import os
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 
+from LCA import LCA
+
 from config.config import *
 
-def plot_waterfall_one_either(veh_type, area, year, income_group, show_PV, save_figure=False):
+from Start import df_vehicles,df_areas,df_income_groups
+
+
+def get_fn(area, year, income_group, custom_discount_rate):
+	fn = "area={0:s}_year={1:d}_income_group={2:s}".format(area, year, income_group)
+	if custom_discount_rate is not None:
+		# fn += "_{0:g}%".format(custom_discount_rate*100)
+		fn += "_custom_discount_rate"
+	return fn
+
+def get_diff_cum_df_fn_full(area, year, income_group, custom_discount_rate):
+	""" Get full filename for dataframe of cumulative cost differences for all vehicle pairs """
+	diff_cum_df_fn_full = "results/"+"cumulative differences/"+get_fn(area, year, income_group, custom_discount_rate)+".csv"
+	return diff_cum_df_fn_full
+
+def run_LCA_for_all_veh_types(df_vehicles, df_areas, df_income_groups, area, year, income_group, custom_discount_rate):
+	diff_cum_df = pd.DataFrame()
+	
+	for veh_type in veh_names_pairs_dict:
+		veh_names = veh_names_pairs_dict[veh_type]
+		
+		#initialize LCA class object and run/read results
+		lca = LCA(df_vehicles, df_areas, df_income_groups, veh_names, area, year, income_group, custom_discount_rate)
+		lca.retrieve_results()
+		
+		#derive differences
+		diff = lca.get_results(veh_names[1]).select_dtypes(include=numerics) - lca.get_results(veh_names[0]).select_dtypes(include=numerics)
+		diff_cum = diff.loc["post-use", lca.total_columns]
+		
+		if veh_names[0].replace("ICEV", "BEV") == veh_names[1]:
+			fn = veh_names[0].replace(" ICEV", "")
+		elif veh_names[0]=="Toyota Corolla ICEV" and veh_names[1]=="Chevrolet Bolt BEV":
+			fn = "affordable sedan"
+		diff_cum_df[fn] = diff_cum
+	diff_cum_df.index.name = "quantity"
+
+	#save differences in csv file
+	diff_cum_df_fn_full = get_diff_cum_df_fn_full(area, year, income_group, custom_discount_rate)
+	diff_cum_df.to_csv(diff_cum_df_fn_full)
+	
+	return diff_cum_df
+
+def plot_waterfall_one_either(veh_type, area, year, income_group, custom_discount_rate=None, show_PV=True, save_figure=False):
 	"""
 	Waterfall plot for **one** vehicle type, showing **either** nominal or present value cost differences.
 	"""
-	#read-in cumulative results data
-	diff_cum_df_fn = "diff_cum_all_area={0:s}_year={1:d}_income_group={2:s}".format(area,year,income_group)
-	diff_cum_df = pd.read_csv("results/"+"cumulative differences/"+diff_cum_df_fn+".csv", index_col="quantity")
+	
+	diff_cum_df_fn_full = get_diff_cum_df_fn_full(area, year, income_group, custom_discount_rate)
+	if os.path.isfile(diff_cum_df_fn_full) and custom_discount_rate is None: #read-in cumulative results data
+		diff_cum_df = pd.read_csv(diff_cum_df_fn_full, index_col="quantity")
+	else: #calculate cumulative results data
+		diff_cum_df = run_LCA_for_all_veh_types(df_vehicles, df_areas, df_income_groups, area, year, income_group, custom_discount_rate)
 	
 	cols_for_waterfall_plot = ["total "+cost_type+" costs [$]" for cost_type in cost_types]
 	if show_PV:
@@ -90,6 +138,8 @@ def plot_waterfall_one_either(veh_type, area, year, income_group, show_PV, save_
 	
 	if save_figure:
 		suffix = "discounted" if show_PV else "nominal"
+		if show_PV:
+			suffix += " (default)" if custom_discount_rate is None else " ({0:.0f}%)".format(custom_discount_rate*100)
 		fn = "waterfall_veh_type={0:s}_area={1:s}_year={2:d}_income_group={3:s}_{4:s}".format(veh_type.replace("/","-"), area, year, income_group, suffix)
 		width = fsize*1150/22
 		fig.write_image("plots/"+"waterfalls/one_either/"+fn+".png", width=width, height=0.65*width, scale=5)
@@ -97,13 +147,16 @@ def plot_waterfall_one_either(veh_type, area, year, income_group, show_PV, save_
 	return fig
 
 
-def plot_waterfall_one_both(veh_type, area, year, income_group, save_figure=False):
+def plot_waterfall_one_both(veh_type, area, year, income_group, custom_discount_rate=None, save_figure=False):
 	"""
 	Waterfall plot for **one** vehicle type, showing **both** nominal and present value cost differences.
 	"""
-	#read-in cumulative results data
-	diff_cum_df_fn = "diff_cum_all_area={0:s}_year={1:d}_income_group={2:s}".format(area,year,income_group)
-	diff_cum_df = pd.read_csv("results/"+"cumulative differences/"+diff_cum_df_fn+".csv", index_col="quantity")
+	
+	diff_cum_df_fn_full = get_diff_cum_df_fn_full(area, year, income_group, custom_discount_rate)
+	if os.path.isfile(diff_cum_df_fn_full) and custom_discount_rate is None: #read-in cumulative results data
+		diff_cum_df = pd.read_csv(diff_cum_df_fn_full, index_col="quantity")
+	else: #calculate cumulative results data
+		diff_cum_df = run_LCA_for_all_veh_types(df_vehicles, df_areas, df_income_groups, area, year, income_group, custom_discount_rate)
 	
 	fig = go.Figure()
 	
@@ -196,19 +249,23 @@ def plot_waterfall_one_both(veh_type, area, year, income_group, save_figure=Fals
 	
 	if save_figure:
 		fn = "waterfalls_veh_type={0:s}_area={1:s}_year={2:d}_income_group={3:s}".format(veh_type.replace("/","-"), area, year, income_group)
+		fn += " (discount rate=default)" if custom_discount_rate is None else " (discount rate={0:.0f}%)".format(custom_discount_rate*100)
 		width = fsize*1150/22
 		fig.write_image("plots/"+"waterfalls/one_both/"+fn+".png", width=width, height=0.65*width, scale=5)
 	
 	return fig
 
 
-def plot_waterfall_all_either(veh_types_to_show, area, year, income_group, show_PV, save_figure=False):
+def plot_waterfall_all_either(veh_types_to_show, area, year, income_group, custom_discount_rate=None, show_PV=True, save_figure=False):
 	"""
 	Waterfall plot for **all** vehicle types, showing **either** nominal or present value cost differences.
 	"""
-	#read-in cumulative results data
-	diff_cum_df_fn = "diff_cum_all_area={0:s}_year={1:d}_income_group={2:s}".format(area,year,income_group)
-	diff_cum_df = pd.read_csv("results/"+"cumulative differences/"+diff_cum_df_fn+".csv", index_col="quantity")
+	
+	diff_cum_df_fn_full = get_diff_cum_df_fn_full(area, year, income_group, custom_discount_rate)
+	if os.path.isfile(diff_cum_df_fn_full) and custom_discount_rate is None: #read-in cumulative results data
+		diff_cum_df = pd.read_csv(diff_cum_df_fn_full, index_col="quantity")
+	else: #calculate cumulative results data
+		diff_cum_df = run_LCA_for_all_veh_types(df_vehicles, df_areas, df_income_groups, area, year, income_group, custom_discount_rate)
 	
 	#settings regarding whether or not to plot nominal or present value
 	if show_PV:
@@ -219,7 +276,7 @@ def plot_waterfall_all_either(veh_types_to_show, area, year, income_group, show_
 		cols_for_waterfall_plot = ["total "+cost_type+" costs [$]" for cost_type in cost_types]
 	
 	#order veh_types_to_show according to veh_types
-	veh_types_to_show = sorted(veh_types_to_show, key=(veh_types+["affordable sedan"]).index)
+	veh_types_to_show = sorted(veh_types_to_show, key=(list(veh_names_pairs_dict.keys())).index)
 	
 	fig = go.Figure()
 	
@@ -306,6 +363,8 @@ def plot_waterfall_all_either(veh_types_to_show, area, year, income_group, show_
 	if save_figure:
 		#veh_types_to_show intentionally left out of the filename to not blow it up
 		suffix = "discounted" if show_PV else "nominal"
+		if show_PV:
+			suffix += " (default)" if custom_discount_rate is None else " ({0:.0f}%)".format(custom_discount_rate*100)
 		fn = "waterfall_area={0:s}_year={1:d}_income_group={2:s}_{3:s}".format(area, year, income_group, suffix)
 		width = fsize*1150/22
 		fig.write_image("plots/"+"waterfalls/all_either/"+fn+".png", width=width, height=0.65*width, scale=5)

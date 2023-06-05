@@ -5,11 +5,13 @@ import matplotlib
 import matplotlib.pyplot as plt
 import streamlit as st
 
+import helpers as h
+
 import utils as u
 from config.config import *
 
 class LCA:
-	def __init__(self, df_vehicles, df_areas, df_income_groups, veh_names, area, year, income_group):
+	def __init__(self, df_vehicles, df_areas, df_income_groups, veh_names, area, year, income_group, custom_discount_rate=None):
 		self.df_vehicles = df_vehicles
 		self.df_areas = df_areas
 		self.df_income_groups = df_income_groups
@@ -17,6 +19,15 @@ class LCA:
 		self.area = area
 		self.year = year
 		self.income_group = income_group
+		
+		#set discount rate
+		self.custom_discount_rate = custom_discount_rate
+		# self.discount_rate = R #flat discount rate R specified in config
+		if self.custom_discount_rate is None:
+			self.discount_rate = self.df_income_groups.loc[self.income_group, "discount rate"] #income_group-specific discount rate specified in income_groups.xlsx ("use default")
+		else:
+			self.discount_rate = self.custom_discount_rate #discount rate as passed to this class
+		# st.write(self.discount_rate,type(self.discount_rate))
 		
 		#old way: get annual mileage and lifetime mileage from first selected vehicle (and determine lifetime from that)
 		# veh_name0 = self.veh_names[0] #use first vehicle in selection to set annual and lifetime mileage
@@ -85,21 +96,17 @@ class LCA:
 		
 		#fill in mileage column
 		df_results.loc[0, "mileage [mi]"] = 0
-		# print(df_results)
-		# print(self.lifetime_range)
-		# print(df_results["time [yr]"].diff())
-		# print(self.annual_mileage)
 		df_results.loc[self.lifetime_range[1:], "mileage [mi]"] = df_results["time [yr]"].diff() * self.annual_mileage
 		
 		self.results = dict()
 		self.results_fns = dict()
 		for veh_name in self.veh_names:
 			self.results[veh_name] = df_results.copy()
-			self.results_fns[veh_name] = "veh_name={0:s}_area={1:s}_year={2:d}_income_group={3:s}.csv".format(veh_name.replace("/","-"), self.area, self.year, self.income_group) #results filenames
+			self.results_fns[veh_name] = "veh_name={0:s}_".format(veh_name.replace("/","-")) + h.get_fn(area, year, income_group, custom_discount_rate) + ".csv" #results filenames
 	
 	def retrieve_results(self):
 		for veh_name in self.veh_names:
-			if os.path.isfile("results/"+self.results_fns[veh_name]):
+			if os.path.isfile("results/"+"individual vehicle names/"+self.results_fns[veh_name]) and self.custom_discount_rate is None: #never read results when discount rate is custom, instead run new (otherwise would have to store result files for all possible discount rates (0%, 1%, 2%, ..., 25%)
 				self.read_results(veh_name)
 			else:
 				self.run(veh_name)
@@ -145,6 +152,8 @@ class LCA:
 		
 		#purchase cost
 		results_df.loc[0, "purchase costs [$]"] = self.df_vehicles.loc[veh_name, "average transaction price [$]"]
+		
+		#incentives
 		if self.df_vehicles.loc[veh_name, "powertrain_type"] == "EV": #apply federal EV tax credit
 			# results_df.loc[1, "incentives costs [$]"] = -7500
 			results_df.loc[1, "incentives costs [$]"] = - self.df_income_groups.loc[self.income_group, "maximum benefit from federal $7,500 EV tax credit"]
@@ -167,8 +176,7 @@ class LCA:
 		
 		#discount costs
 		for col in self.non_total_undiscounted_cost_columns:
-			# results_df["present value "+col] = results_df[col] / (1+R)**results_df["time [yr]"]
-			results_df["present value "+col] = results_df[col] / (1+self.df_income_groups.loc[self.income_group, "discount rate"])**results_df["time [yr]"]
+			results_df["present value "+col] = results_df[col] / (1 + self.discount_rate)**results_df["time [yr]"]
 		
 		#calculate emissions
 		results_df["emissions [tCO$_2$-eq.]"] = results_df["time [yr]"].diff() * self.annual_mileage * self.get_emissions_per_mile(veh_name)
@@ -182,23 +190,25 @@ class LCA:
 		#round costs and emissions
 		results_df = results_df.convert_dtypes()
 		results_df[self.costs_columns] = results_df[self.costs_columns].replace(pd.NA, np.nan).round(0)
-		results_df[self.emissions_columns] = results_df[self.emissions_columns].replace(pd.NA, np.nan).round(1)
+		results_df[self.emissions_columns] = results_df[self.emissions_columns].replace(pd.NA, np.nan).round(2)
 		
 		#write results_df into self.results[veh_name]
 		self.results[veh_name] = results_df.copy()
 		
 		#save results
-		self.results[veh_name].to_csv("results/"+self.results_fns[veh_name])
+		self.results[veh_name].to_csv("results/"+"individual vehicle names/"+self.results_fns[veh_name])
 	
 	def read_results(self, veh_name):
-		self.results[veh_name] = pd.read_csv("results/"+self.results_fns[veh_name], index_col="period [yr]")
+		self.results[veh_name] = pd.read_csv("results/"+"individual vehicle names/"+self.results_fns[veh_name], index_col="period [yr]")
 	
 	def plot_results(self, y_quant):
 		fig,ax = plt.subplots(figsize=(8,6))
-
+		
 		for veh_name in self.veh_names:
 			x = self.results[veh_name]["time (for plotting) [yr]"]
 			y = self.results[veh_name][y_quant]
+			x = x.to_numpy() #if this is not done, then plotting on the first run (without reading the results from an existing file fails due to some value/datatype error)
+			y = y.to_numpy()
 			u.plot(x, y, frame=[fig,ax], kind="plot", label=self.df_vehicles.loc[veh_name, "label"], color=self.df_vehicles.loc[veh_name, "color"], lw=self.df_vehicles.loc[veh_name, "lw"], marker_option=self.df_vehicles.loc[veh_name, "marker_option"], zorder=self.df_vehicles.loc[veh_name, "zorder"], ls="-", alpha=1.)
 		
 		#figure setup
@@ -265,12 +275,12 @@ class LCA:
 			# secax.grid(1) #doesn't work
 		xticks_old = ax.get_xticks()
 		xticks = ax.xaxis.get_major_ticks()
-		for i,x in enumerate(xticks_old):
-			# if x < 0 or x > self.lifetime_mileage:
-			if x < 0 or x >= self.lifetime:
+		for i,xtick_old in enumerate(xticks_old):
+			# if xtick_old < 0 or xtick_old > self.lifetime_mileage:
+			if xtick_old < 0 or xtick_old >= self.lifetime:
 				xticks[i].set_visible(False)
 		
-		filename = "plot.png"
+		# filename = "plot.png"
 		# u.save_figure(fig, "plots/"+filename, dpi=200)
 	
 	def get_results(self, veh_name, show_non_total_columns=True, show_time_columns=False):
