@@ -1,7 +1,6 @@
 import streamlit as st
 st.set_option('deprecation.showPyplotGlobalUse', False)
 import pandas as pd
-import numpy as np
 import plotly.graph_objects as go
 
 import helpers as h
@@ -29,7 +28,7 @@ with col0_year:
 with col0_inc_group:
 	income_group = st.selectbox("Income group of vehicle buyer:", df_income_groups.index, index=1)
 custom_discount_rate_selection = st.select_slider("Select what discount rate to use:", discount_rate_options)
-custom_discount_rate = None if "default" in custom_discount_rate_selection else np.float(custom_discount_rate_selection[:-1])/100
+custom_discount_rate = None if "default" in custom_discount_rate_selection else float(custom_discount_rate_selection[:-1])/100
 # incentives = st.multiselect("Incentives:": ["$7,500 Federal EV Tax Credit"])
 
 #initialize LCA class object and run/read results
