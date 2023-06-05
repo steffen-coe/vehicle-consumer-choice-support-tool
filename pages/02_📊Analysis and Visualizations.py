@@ -107,7 +107,7 @@ with col2:
 		show_slider = True
 if show_slider: #only show slider to customize discount rate when needed (either when only discounted values are shown or when both nominal and discounted values are shown)
 	custom_discount_rate_selection = st.select_slider("Select what discount rate to use:", discount_rate_options, key="needs unique key because same selectbox (discount rate) as above")
-	custom_discount_rate = None if "default" in custom_discount_rate_selection else np.float(custom_discount_rate_selection[:-1])/100
+	custom_discount_rate = None if "default" in custom_discount_rate_selection else float(custom_discount_rate_selection[:-1])/100
 st.write(first_string)
 st.markdown(second_string, unsafe_allow_html=True)
 
