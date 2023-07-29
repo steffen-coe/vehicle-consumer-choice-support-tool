@@ -6,10 +6,12 @@ The presented modeling framework was developed as part of a graduate research pr
 
 The modeling framework allows for the flexible assessment of a variety of different input combinations. EV total costs of ownership were found to be lower than those of ICEVs in nominal terms, for all geographic areas and vehicle types except for sedans, due to the prevalence of the high-end Tesla Model S in the market. The tool reveals the dependency between maximum allowable discount rates for EVs to remain the financially more attractive alternative on the one hand and socioeconomic factors, driving patterns, and vehicle types on the other hand. Electric vehicles represent the most viable alternative especially when consumers intrinsically apply low discount rates, when they have a high annual mileage, and hang on to their vehicle for longer than the average does. In quite a few cases, discount rates can be excessively high while the EV remains the financially more viable alternative.
 
-A publicly accessible online tool was developed to allow users to interactively explore the results and visualize nominal and discounted cost differences between conventional and electric vehicles. It can be accessed at <vehicle-consumer-choice-tool.streamlit.app>. This GitHub repository is <https://github.com/steffen-coe/vehicle-consumer-choice-support-tool>. The tool utilizes the
+A publicly accessible online tool was developed to allow users to interactively explore the results and visualize nominal and discounted cost differences between conventional and electric vehicles. It can be accessed at [<vehicle-consumer-choice-tool.streamlit.app](https://vehicle-consumer-choice-tool.streamlit.app/). This GitHub repository is <https://github.com/steffen-coe/vehicle-consumer-choice-support-tool>. The tool utilizes the
 Python Streamlit package, allowing users to dynamically update the results based on the chosen scenarios. The tool is available under an [MIT License](LICENSE).
 
 [![Screenshot of the app's selection menu. Click on this image to go to the tool.](img/screenshot.png)](https://vehicle-consumer-choice-tool.streamlit.app/)
+
+<a href="https://vehicle-consumer-choice-tool.streamlit.app/" target="_blank"> [![Screenshot of the app's selection menu. Click on this image to go to the tool.](img/screenshot.png) </a>
 
 
 ## Waterfall plots
