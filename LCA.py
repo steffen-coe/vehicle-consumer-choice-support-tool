@@ -201,7 +201,7 @@ class LCA:
 	def read_results(self, veh_name):
 		self.results[veh_name] = pd.read_csv("results/"+"individual vehicle names/"+self.results_fns[veh_name], index_col="period [yr]")
 	
-	def plot_results(self, y_quant):
+	def plot_results(self, y_quant, save_figure=False):
 		fig,ax = plt.subplots(figsize=(8,6))
 		
 		for veh_name in self.veh_names:
@@ -280,8 +280,17 @@ class LCA:
 			if xtick_old < 0 or xtick_old >= self.lifetime:
 				xticks[i].set_visible(False)
 		
-		# filename = "plot.png"
-		# u.save_figure(fig, "plots/"+filename, dpi=200)
+		if save_figure:
+			if len(self.veh_names) == 2:
+				if self.veh_names[0].replace("ICEV", "BEV") == self.veh_names[1]:
+					fn = self.veh_names[0].replace(" ICEV", "").replace("/","-")
+				elif self.veh_names[0]=="Toyota Corolla ICEV" and self.veh_names[1]=="Chevrolet Bolt BEV":
+					fn = "affordable sedan"
+			else:
+				fn = "some vehicles"
+			fn += "_" + h.get_fn(self.area, self.year, self.income_group, self.custom_discount_rate)
+			
+			u.save_figure(fig, "plots/"+"line plots/"+y_quant+"/"+fn+".png", dpi=300)
 	
 	def get_results(self, veh_name, show_non_total_columns=True, show_time_columns=False):
 		excl_cols = pd.Series(False, index=self.results[veh_name].columns) if show_time_columns else self.results[veh_name].columns.isin(["time [yr]", "time (for plotting) [yr]"]) #hack

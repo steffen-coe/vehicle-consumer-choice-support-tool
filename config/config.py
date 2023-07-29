@@ -11,6 +11,7 @@
 # veh_names_pairs = [[veh_type+" ICEV", veh_type+" BEV"] for veh_type in veh_types]
 # veh_names_pairs += [["Toyota Corolla ICEV", "Chevrolet Bolt BEV"]]
 # veh_names_pairs
+
 #this is a dict of vehicle names to compare (one pair of vehicle names (one ICEV, one BEV) for each vehicle type (keys of the dict)
 veh_names_pairs_dict = {
 	"Typical": ["Typical ICEV", "Typical BEV"], 
@@ -87,6 +88,7 @@ eff_charging = 0.95 #charging efficiency
 
 R = 0.025 #discount rate
 discount_rate_options = ["Use defaults", *["{0:d}%".format(p) for p in range(0,26)]]
+# discount_rate_options = ["Use defaults", *["{0:d}%".format(p) for p in range(0,101)]]
 
 rec_CO2 = 0 #recycling-phase emissions
 rec_price = 0 #recycling-phase price
