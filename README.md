@@ -16,7 +16,9 @@ Python Streamlit package, allowing users to dynamically update the results based
 
 Waterfall plot visualizing the cost differences between a typical ICEV and a typical EV in the different cost categories. Positive (red) values denote higher costs for the EV, whereas negative (green) values show cost savings for the EV. The left bar in each cost category represents nominal (future value) cost differences, the right bar represents discounted (present value) cost differences, at the default 5% discount rate.
 
-![FOO](plots/waterfalls/one_both/waterfalls_veh_type=Typical_area=U.S._year=2022_income_group=$50-75k%20(discount rate=default).png)
+![FOO](img/waterfalls_veh_type=Typical_area=U.S._year=2022_income_group=$50-75k%20(discount rate=default).png)
+
+![FOO](img/waterfalls_veh_type=Typical_area=U.S._year=2022_income_group=$50-75k&#32;(discount rate=default).png)
 
 ![Foo](plots/waterfalls/one_both/waterfalls_veh_type=Typical_area=U.S._year=2022_income_group=$50-75k&#32;(discount rate=default).png)
 
