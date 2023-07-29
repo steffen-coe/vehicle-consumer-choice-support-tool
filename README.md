@@ -20,7 +20,7 @@ Waterfall plot visualizing the cost differences between a typical ICEV and a typ
 
 ![FOO](img/waterfalls_veh_type=Typical_area=U.S._year=2022_income_group=$50-75k&#32;(discount rate=default).png)
 
-![FOO](img/waterfalls_veh_type=Typical_area=U.S._year=2022_income_group=$50-75k (discount rate=default).png)
+![FOO](img/waterfalls_veh_type=Typical_area=U.S._year=2022_income_group=$50-75k(discount rate=default).png)
 
 ![Foo](plots/waterfalls/one_both/waterfalls_veh_type=Typical_area=U.S._year=2022_income_group=$50-75k&#32;(discount rate=default).png)
 
