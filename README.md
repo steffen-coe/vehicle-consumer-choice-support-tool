@@ -9,14 +9,14 @@ The modeling framework allows for the flexible assessment of a variety of differ
 A publicly accessible online tool was developed to allow users to interactively explore the results and visualize nominal and discounted cost differences between conventional and electric vehicles. It can be accessed at <vehicle-consumer-choice-tool.streamlit.app>. This GitHub repository is <https://github.com/steffen-coe/vehicle-consumer-choice-support-tool>. The tool utilizes the
 Python Streamlit package, allowing users to dynamically update the results based on the chosen scenarios. The tool is available under an [MIT License](LICENSE).
 
-[![Screenshot of the app's selection menu. Click on this image to go to the tool.](img/screenshot.png)](vehicle-consumer-choice-tool.streamlit.app)
+[![Screenshot of the app's selection menu. Click on this image to go to the tool.](img/screenshot.png)](https://vehicle-consumer-choice-tool.streamlit.app/)
 
 
 ## Waterfall plots
 
 Waterfall plot visualizing the cost differences between a typical ICEV and a typical EV in the different cost categories. Positive (red) values denote higher costs for the EV, whereas negative (green) values show cost savings for the EV. The left bar in each cost category represents nominal (future value) cost differences, the right bar represents discounted (present value) cost differences, at the default 5% discount rate.
 
-![Screenshot of the app's selection menu. Click on this image to go to the tool.](plots/waterfalls/one_both/waterfalls_veh_type=Typical_area=U.S._year=2022_income_group=$50-75k (discount rate=default).png)
+![Screenshot of the app's selection menu. Click on this image to go to the tool.](plots/waterfalls/one_both/waterfalls_veh_type=Typical_area=U.S._year=2022_income_group=$50-75k&#32;(discount rate=default).png)
 
 ## Usage
 
