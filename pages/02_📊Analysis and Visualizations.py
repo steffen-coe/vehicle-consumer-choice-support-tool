@@ -1,5 +1,5 @@
 import streamlit as st
-st.set_option('deprecation.showPyplotGlobalUse', False)
+#  st.set_option('deprecation.showPyplotGlobalUse', False) # throws exception since Streamlit v1.30 (released in early 2024) and is no longer needed because Streamlit doesn't show that old pyplot warning anymore
 import pandas as pd
 import plotly.graph_objects as go
 
